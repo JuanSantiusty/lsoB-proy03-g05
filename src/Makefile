@@ -16,7 +16,7 @@ doc:
 	doxygen
 
 clean:
-	rm -rf main.o listpart docs
+	rm -rf main.o gpt.o mbr.o listpart docs
 
 
 install: all

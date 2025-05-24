@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include "mbr.h"
 #include "gpt.h"
@@ -32,7 +33,25 @@ void ascii_dump(char * buf, size_t size);
 
 
 int main(int argc, char *argv[]) {
-
+        // Leer disco
+        mbr disco_mbr;
+        char *direccion;
+        FILE *disco;
+        //En caso de no ingresar ningun prametro, o mas de los requeridos finalizar la ejecucion
+        if(argc!=2){
+          printf("Ingresar como parametro el disco");
+          exit(1);
+        }
+        //Leer ubicación del archivo
+        direccion=argv[1];
+        disco=fopen(direccion,"rb");
+        fread(&disco_mbr,sizeof(mbr),1,disco);
+        fclose(disco);
+        //Verificar si es un MBR valido y imprimir la información de las particiones
+        if(is_mbr (&disco_mbr)){
+            printf("Es MBR");
+        }
+        
 	return 0;
 }
 

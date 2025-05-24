@@ -6,6 +6,8 @@
 #ifndef MBR_H
 #define MBR_H
 
+#include <stdint.h>  
+
 /** @brief Boot sector signature */
 #define MBR_SIGNATURE 0xAA55
 
@@ -20,15 +22,21 @@
 
 /** @brief Partition descriptor - MBR */
 typedef struct {
-	/* TODO definir los atributos para la estructura de un descriptor de particion MBR */
-	/* La suma completa de bytes de esta estructura debe ser 16 */
+    uint8_t  estado_arranque;       // (1 byte)
+    uint8_t  inicio_chs[3];    // (3 bytes)
+    uint8_t  tipo_particion;  // (1 byte)
+    uint8_t  fin_chs[3];      // (3 bytes)
+    uint32_t inicio_lba;       // (4 bytes)
+    uint32_t tamano_particion;    // (4 bytes)
 }__attribute__((packed)) mbr_partition_descriptor;
 
 /** @brief Master Boot Record. */
 typedef struct {
-	/* TODO definir los atributos para la estructura de datos que representa un MBR (bootsector)*/
-	/* La suma completa de bytes de esta estructura debe ser 512 */
+    uint8_t bootstrap[446];    // (446 bytes)
+    mbr_partition_descriptor particiones[4]; // Tabla de particiones (64 bytes)
+    uint16_t arranque;       // (2 bytes)
 }__attribute__((packed)) mbr;
+
 
 /**
 * @brief Checks if a bootsector is a MBR.
@@ -43,6 +51,9 @@ int is_mbr(mbr * boot_record);
 * @param buf String buffer to store the text description
 */
 void mbr_partition_type(unsigned char type, char buf[TYPE_NAME_LEN]);
+
+//Imprimir MBR
+void imprimir_mbr(mbr * boot_record);
 
 
 #endif

@@ -261,12 +261,20 @@ const char * mbr_partition_types[256] = {
 	"XENIX bad block table", //FF
 };
 
+/*Para verificar que es un MBR valido, se comprueba que su firma de arranque sea 0x55AA, retorna 1 si es valido
+caso contrario retorna 0*/
 int is_mbr(mbr * boot_record) {
-	/* TODO verificar si el bootsector leido es valido. */
+	if(boot_record->arranque == MBR_SIGNATURE){
+	  return 1;
+	}
 	return 0;
 }
 
 
 void mbr_partition_type(unsigned char type, char buf[TYPE_NAME_LEN]) {
 	/* TODO rellenar en el buffer el nombre textual del tipo de particion */
+}
+
+//Imprimir MBR
+void imprimir_mbr(mbr * boot_record){
 }
