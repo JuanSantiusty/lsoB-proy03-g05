@@ -1,4 +1,6 @@
 #include <string.h>
+#include <stdio.h>
+#include <stdint.h>
 
 #include "mbr.h"
 
@@ -261,20 +263,60 @@ const char * mbr_partition_types[256] = {
 	"XENIX bad block table", //FF
 };
 
-/*Para verificar que es un MBR valido, se comprueba que su firma de arranque sea 0x55AA, retorna 1 si es valido
+char buffer[100]; //Buffer para guardar nombre textual de los tipos de particiones
+
+/*Para verificar que es un MBR valido, retorna 1 si es valido
 caso contrario retorna 0*/
 int is_mbr(mbr * boot_record) {
-	if(boot_record->arranque == MBR_SIGNATURE){
+      int i;
+      if(boot_record->arranque == MBR_SIGNATURE){
+	if(boot_record->particiones[0].tipo_particion == MBR_TYPE_GPT){
+	  return 0;
+	}else{
 	  return 1;
-	}
-	return 0;
+	}                    
+      }else{
+	  return 0;
+      }
 }
 
 
-void mbr_partition_type(unsigned char type, char buf[TYPE_NAME_LEN]) {
-	/* TODO rellenar en el buffer el nombre textual del tipo de particion */
+void mbr_partition_type(uint8_t type) {
+	strcpy(buffer, mbr_partition_types[type]);
+}
+
+
+uint32_t chs_a_lba(const uint8_t chs[3]) {
+    uint32_t c  = ((chs[1] & 0xC0) << 2) | chs[0]; 
+    uint32_t h      = chs[1] & 0x3F;                 
+    uint32_t s    = chs[2] & 0x3F;                    
+
+    // Aplicar fórmula CHS → LBA
+    return (c*16*63)+(h*63)+(s-1);
 }
 
 //Imprimir MBR
 void imprimir_mbr(mbr * boot_record){
+    printf("----------------------------Esquema MBR--------------------------------\n");
+    printf("-----------------------------------------------------------------------\n");
+    printf("Inicio\t\tFin\t\tTamaño\t\tTipo\n");
+    printf("-----------------------------------------------------------------------\n");
+    int i;
+    for(i=0;i<4;i++){
+    if(boot_record->particiones[i].inicio_lba==0){
+      continue;
+    }
+      printf("%u      ",boot_record->particiones[i].inicio_lba);
+      printf("%u\t\t",boot_record->particiones[i].inicio_lba+boot_record->particiones[i].tamano_particion-1);
+      //Calcular tamaño en GB MB
+      double tamano= (boot_record->particiones[i].tamano_particion * 512.0) / (1024 * 1024 * 1024);
+      if (tamano >= 1.0) {
+        printf("%.1f GB\t\t", tamano);
+      } else {
+        printf("%.0f MB\t\t", (boot_record->particiones[i].tamano_particion * 512.0) / (1024 * 1024));
+      }
+      //Tipo de partición 
+      mbr_partition_type(boot_record->particiones[i].tipo_particion);
+      printf("%s\n",buffer);
+    } 
 }

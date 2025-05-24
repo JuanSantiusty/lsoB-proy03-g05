@@ -50,7 +50,7 @@ int is_mbr(mbr * boot_record);
 * @param type Partition type reported in MBR
 * @param buf String buffer to store the text description
 */
-void mbr_partition_type(unsigned char type, char buf[TYPE_NAME_LEN]);
+void mbr_partition_type(uint8_t  tipo);
 
 //Imprimir MBR
 void imprimir_mbr(mbr * boot_record);

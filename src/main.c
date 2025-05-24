@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
         fclose(disco);
         //Verificar si es un MBR valido y imprimir la información de las particiones
         if(is_mbr (&disco_mbr)){
-            printf("Es MBR");
+            imprimir_mbr(&disco_mbr);
         }
         
 	return 0;
