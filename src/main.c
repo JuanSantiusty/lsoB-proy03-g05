@@ -52,6 +52,32 @@ int main(int argc, char *argv[]) {
             imprimir_mbr(&disco_mbr);
         }
         
+        // Verificar si es un MBR de protección GPT
+        if (!is_protective_mbr(&disco_mbr)) {
+          return 0;
+        }
+        
+        // Leer el encabezado GPT (sector 1)
+       gpt_header hdr;
+       FILE *disco_gpt = fopen(direccion, "rb");
+       if (!disco_gpt) {
+           perror("Error al abrir el disco para GPT");
+           return 1;
+       }
+       fseek(disco_gpt, 512, SEEK_SET); // Ir al LBA 1
+        fread(&hdr, sizeof(gpt_header), 1, disco_gpt);
+        fclose(disco_gpt);
+
+        // Validar encabezado GPT
+        if (!is_valid_gpt_header(&hdr)) {
+            printf("Encabezado GPT no válido.\n");
+           return 1;
+        }
+        
+        imprimir_gpt_header(&hdr);
+        imprimir_gpt_partitions(direccion, &hdr);
+        
+        
 	return 0;
 }
 

@@ -287,16 +287,21 @@ const gpt_partition_type gpt_partition_types[] = {
 
 
 int is_protective_mbr(mbr * boot_record) {
-	/* TODO verificar si el MBR es un MBR de proteccion */
-	/* Retorna 1 si el boot record tiene una tabla de particiones
-	con solo una partición definida, de tipo GPT Protective MBR (0xEE) */
-	return 0;
+	int count = 0;
+    for (int i = 0; i < 4; i++) {
+        if (boot_record->particiones[i].tipo_particion != 0x00) {
+            count++;
+            if (boot_record->particiones[i].tipo_particion != 0xEE) {
+                return 0; // No es tipo protectivo
+            }
+        }
+    }
+    return count == 1; // Debe haber solo una y debe ser 0xEE
 }
 
 
 int is_valid_gpt_header(gpt_header * hdr) {
-	/* TODO retorna 1 si el encabezado es valido (verificar el valor del atributo signature)*/
-	return 0;
+	return strncmp(hdr->signature, "EFI PART", 8) == 0;
 }
 
 
@@ -352,20 +357,71 @@ char * gpt_decode_partition_name(char name[72]) {
 
 
 int is_null_descriptor(gpt_partition_descriptor * desc) {
-	/* TODO  Determinar si todos los campos del descriptor estan en 0*/
-
-	return 0;
+    unsigned char * ptr = (unsigned char *)desc;
+    for (int i = 0; i < sizeof(gpt_partition_descriptor); i++) {
+        if (ptr[i] != 0) {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 
 
 const gpt_partition_type * get_gpt_partition_type(char * guid_str) {
-
-	/* TODO retornar el tipo de particion de acuerdo con el GUID especificado */
-
-	//Default: return first element of partition type array
-	return &gpt_partition_types[0];
+    for (int i = 0; gpt_partition_types[i].guid != NULL; i++) {
+        if (strcasecmp(gpt_partition_types[i].guid, guid_str) == 0) {
+            return &gpt_partition_types[i];
+        }
+    }
+    // Si no encuentra coincidencia, retorna el primero (partición inválida)
+    return &gpt_partition_types[0];
 }
 
+void imprimir_gpt_header(gpt_header * hdr) {
+    printf("GPT Header:\n");
+    printf("Revision: 0x%X\n", hdr->revision);
+    printf("Primer LBA usable: %llu\n", hdr->first_usable_lba);
+    printf("Último LBA usable: %llu\n", hdr->last_usable_lba);
+    char * guid_str = guid_to_str(&hdr->disk_guid);
+    printf("GUID del disco: %s\n", guid_str);
+    printf("Numero de entradas: %u\n", hdr->partition_entries);
+    printf("Tamano por entrada: %u bytes\n", hdr->partition_entry_size);
+    free(guid_str);
+}
 
+void imprimir_gpt_partitions(const char * ruta, gpt_header * hdr) {
+    FILE *f = fopen(ruta, "rb");
+    if (!f) {
+        perror("Error al abrir disco para leer particiones GPT");
+        return;
+    }
 
+    gpt_partition_descriptor desc;
+    for (int i = 0; i < hdr->partition_entries; i++) {
+        fseek(f, (hdr->partition_entry_lba * 512) + (i * hdr->partition_entry_size), SEEK_SET);
+        fread(&desc, sizeof(gpt_partition_descriptor), 1, f);
+
+        if (is_null_descriptor(&desc)) {
+            break;
+        }
+
+        unsigned long long size = (desc.end_lba - desc.start_lba + 1) * 512;
+        char * guid_str = guid_to_str(&desc.partition_type_guid);
+        const gpt_partition_type * tipo = get_gpt_partition_type(guid_str);
+        char * nombre = gpt_decode_partition_name(desc.partition_name);
+
+        printf("Particion %d:\n", i + 1);
+        printf("  Tipo: %s (%s)\n", tipo->os, tipo->description);
+        printf("  GUID: %s\n", guid_str);
+        printf("  Nombre: %s\n", nombre);
+        printf("  Sector inicial: %llu\n", desc.start_lba);
+        printf("  Sector final: %llu\n", desc.end_lba);
+        printf("  Tamaño (bytes): %llu\n", size);
+
+        free(guid_str);
+        free(nombre);
+    }
+
+    fclose(f);
+}

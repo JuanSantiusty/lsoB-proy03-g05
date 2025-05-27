@@ -25,14 +25,32 @@ typedef struct {
 
 /** @brief GPT Partition Table Header. */
 typedef struct {
-	/* TODO definir los atributos del encabezado de la tabla GPT */
+    char signature[8];                // "EFI PART"
+    unsigned int revision;           // Revisión
+    unsigned int header_size;        // Tamaño del encabezado
+    unsigned int crc32_header;       // Checksum del encabezado
+    unsigned int reserved;           // Reservado (debe ser 0)
+    unsigned long long current_lba;  // LBA del encabezado
+    unsigned long long backup_lba;   // LBA de respaldo
+    unsigned long long first_usable_lba;
+    unsigned long long last_usable_lba;
+    guid disk_guid;                  // GUID del disco
+    unsigned long long partition_entry_lba;   // LBA de entrada de la tabla
+    unsigned int partition_entries;           // Número de entradas
+    unsigned int partition_entry_size;        // Tamaño de cada entrada
+    unsigned int crc32_partition_array;       // Checksum de la tabla de particiones
 }__attribute__((packed)) gpt_header;
 
 /**
 * @brief GPT Partition Entry
 */
 typedef struct {
-	/* TODO definir los atributos de un descriptor de particion GPT */
+    guid partition_type_guid;      // Tipo de partición
+    guid unique_partition_guid;    // GUID único de la partición
+    unsigned long long start_lba;  // LBA inicial
+    unsigned long long end_lba;    // LBA final
+    unsigned long long attributes; // Atributos
+    char partition_name[72];       // Nombre (UTF-16LE)
 }__attribute__((packed)) gpt_partition_descriptor;
 
 /**
@@ -86,5 +104,9 @@ int is_null_descriptor(gpt_partition_descriptor * desc);
 * @return New string with the text representation of the GUID
 */
 char * guid_to_str(guid * buf);
+
+void imprimir_gpt_header(gpt_header * hdr);
+
+void imprimir_gpt_partitions(const char * ruta, gpt_header * hdr);
 
 #endif
